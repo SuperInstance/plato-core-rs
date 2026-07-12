@@ -6,6 +6,7 @@ authors = ["SuperInstance"]
 license = "MIT"
 description = "Rust implementation of the PLATO Core protocol — Room, Sensor, Actuator, Alarm, wire protocol parsing/formatting."
 repository = "https://github.com/SuperInstance/plato-core-rs"
+homepage = "https://github.com/SuperInstance/plato-core-rs"
 keywords = ["plato", "protocol", "iot", "sensor", "automation"]
 categories = ["network-programming", "embedded", "data-structures"]
 
