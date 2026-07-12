@@ -1,0 +1,17 @@
+[package]
+name = "plato-core"
+version = "0.1.0"
+edition = "2021"
+authors = ["SuperInstance"]
+license = "MIT"
+description = "Rust implementation of the PLATO Core protocol — Room, Sensor, Actuator, Alarm, wire protocol parsing/formatting."
+repository = "https://github.com/SuperInstance/plato-core-rs"
+keywords = ["plato", "protocol", "iot", "sensor", "automation"]
+categories = ["network-programming", "embedded", "data-structures"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+# Tests use the standard library + serde_json only
