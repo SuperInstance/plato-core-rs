@@ -156,11 +156,14 @@ Full spec: [PLATO_WIRE_PROTOCOL.md](https://github.com/SuperInstance/AI-Writings
 cargo test
 ```
 
-## Related
+## Cross-Implementation
 
-- [plato-core (Python)](https://github.com/SuperInstance/plato-core) — Python implementation
-- [PLATO Wire Protocol Spec](https://github.com/SuperInstance/AI-Writings/blob/main/PLATO_WIRE_PROTOCOL.md)
+This component exists in multiple languages:
+- **Python** (`pip install plato-core`) — [SuperInstance/plato-core](https://github.com/SuperInstance/plato-core)
+- **Rust** (`cargo add plato-core`) — [SuperInstance/plato-core-rs](https://github.com/SuperInstance/plato-core-rs)
+- **Rust Runtime Kernel** — [SuperInstance/plato-runtime-kernel](https://github.com/SuperInstance/plato-runtime-kernel) — Spatial model: tensor grid, batons, assertion traps
 
+All implement the same PLATO wire protocol specification. Choose based on your runtime.
 ## License
 
 MIT
