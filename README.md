@@ -1,28 +1,43 @@
-# plato-core-rs
+# 🏛️ PLATO Core (Rust)
 
-Rust implementation of the **PLATO Core protocol** — Room, Sensor, Actuator, Alarm, history buffer, and wire protocol parsing/formatting.
+![Crates.io](https://img.shields.io/crates/v/plato-core)
+![Rust](https://img.shields.io/badge/rust-stable-orange)
+![Tests](https://img.shields.io/badge/tests-40%2B-brightgreen)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
-Part of the [SuperInstance](https://github.com/SuperInstance) ecosystem.
+**Rust implementation of the PLATO Core protocol** — Room, Sensor, Actuator, Alarm, history buffer, and wire protocol parsing/formatting.
 
-## Overview
+PLATO is a lightweight, text-based, line-delimited protocol for agent-to-room communication. It's designed so that a human can type commands in a terminal, an LLM can parse responses without special tooling, and an ESP32 can generate responses in under 1KB of code.
 
-PLATO is a lightweight, text-based, line-delimited protocol for agent-to-room communication. It's designed so that:
+---
 
-1. A human can type commands in a terminal (`nc localhost 1234`)
-2. An LLM can parse responses without special tooling
-3. An ESP32 can generate responses in <1KB of code
-4. A Rust binary can connect in a few lines
+## Philosophy
 
-This crate provides the core types and wire protocol implementation for Rust.
+Part of [Working Animal Architecture](https://github.com/SuperInstance/AI-Writings), where **γ + η = C** (genome + nurture = capability). A PLATO Room is the **pasture** — the bounded space where working animals operate. Sensors are the fence wires; actuators are the gates; alarms are the barking dogs. The protocol is simple enough that anything from an LLM to a microcontroller can be a working animal in the room.
 
-## Quick Start
+> *Type a command. Get a JSON line. That's the whole protocol.*
 
-Add to your `Cargo.toml`:
+## Why PLATO?
+
+1. A **human** can type commands in a terminal (`nc localhost 1234`)
+2. An **LLM** can parse responses without special tooling
+3. An **ESP32** can generate responses in <1KB of code
+4. A **Rust binary** can connect in a few lines
+
+## Installation
+
+```bash
+cargo add plato-core
+```
+
+Or in `Cargo.toml`:
 
 ```toml
 [dependencies]
 plato-core = "0.1"
 ```
+
+## Quick Start
 
 ### Room with Sensors, Actuators, and Alarms
 
@@ -68,7 +83,6 @@ match parse_command("actuator bilge_pump 1") {
 
 ```rust
 use plato_core::wire::{format_welcome, format_tick, format_error};
-use plato_core::room::Room;
 
 let room = Room::new("engine_room", 0.2);
 
@@ -100,7 +114,7 @@ let cmds = vec![
     cmd_help(),
     cmd_quit(),
 ];
-// Each produces a wire-protocol command string
+// Each produces a wire-protocol command string ready to send
 ```
 
 ## Core Types
@@ -113,6 +127,19 @@ let cmds = vec![
 | `Alarm` | Rule: triggers when `sensor OP threshold` is true |
 | `AlarmOp` | Comparison operator (`Lt`, `Gt`, `Eq`, `Ne`, `Le`, `Ge`) |
 | `TickSnapshot` | Point-in-time capture of all sensor and actuator values |
+
+### `AlarmOp` Operators
+
+```rust
+use plato_core::AlarmOp;
+
+AlarmOp::Lt  // less than
+AlarmOp::Gt  // greater than
+AlarmOp::Eq  // equal
+AlarmOp::Ne  // not equal
+AlarmOp::Le  // less or equal
+AlarmOp::Ge  // greater or equal
+```
 
 ## Wire Protocol
 
@@ -150,20 +177,109 @@ Commands are plain-text lines; responses are single-line JSON objects.
 
 Full spec: [PLATO_WIRE_PROTOCOL.md](https://github.com/SuperInstance/AI-Writings/blob/main/PLATO_WIRE_PROTOCOL.md)
 
-## Running Tests
+## API Reference
+
+### `room` Module
+
+| Method | Description |
+|--------|-------------|
+| `Room::new(id, tick_hz)` | Create a room with given ID and tick frequency |
+| `room.add_sensor(name, value)` | Register a sensor |
+| `room.add_actuator(name, value)` | Register an actuator |
+| `room.add_alarm(id, sensor, op, threshold, cooldown)` | Register an alarm rule |
+| `room.tick()` | Execute one tick, return snapshot |
+| `room.tick_and_check()` | Execute tick and return triggered alarms |
+| `room.set_actuator(name, value)` | Update an actuator value |
+| `room.history(n)` | Get last N tick snapshots |
+| `room.alarms()` | List all alarms |
+
+### `wire` Module
+
+| Function | Description |
+|----------|-------------|
+| `parse_command(line)` | Parse a text command into a `Command` enum |
+| `format_welcome(room)` | Create welcome response for new connections |
+| `format_tick(snapshot)` | Format a tick snapshot as JSON response |
+| `format_history(snapshots)` | Format history as JSON response |
+| `format_error(msg)` | Format an error response |
+| `format_ack(...)` | Format an acknowledgement response |
+| `cmd_tick()` / `cmd_history(n)` / etc. | Build command strings for agents |
+
+## Architecture
+
+```
+┌──────────────────────── Room ────────────────────────┐
+│                                                       │
+│  Sensors (read-only)        Actuators (writable)      │
+│  ├── coolant_temp_c: 90     ├── radiator_fan: 0.0     │
+│  ├── oil_pressure_psi: 45   └── oil_pump: 1.0         │
+│  └── rpm: 1800                                        │
+│                                                       │
+│  Alarms (rule-based)            History (ring buffer) │
+│  ├── overheat: temp > 95°C     ├── tick #1: {...}     │
+│  └── low_oil: pressure < 20    ├── tick #2: {...}     │
+│                                └── ... (up to 10,000) │
+│                                                       │
+│  Wire Protocol (JSON over TCP)                        │
+│  ├── parse_command() ← text in                        │
+│  └── format_*()      → JSON out                       │
+└───────────────────────────────────────────────────────┘
+```
+
+### Crate Layout
+
+```
+src/
+├── lib.rs    # Core types: Sensor, Actuator, AlarmOp, Room, TickSnapshot
+└── wire/
+    └── mod.rs  # Protocol: parse_command, format_*, Command, Response, cmd_*
+```
+
+## Testing
 
 ```bash
+# Run all tests
 cargo test
+
+# Run with verbose output
+cargo test -- --nocapture
+
+# Test wire protocol parsing
+cargo test wire::
+
+# Test room behavior
+cargo test room::
 ```
 
 ## Cross-Implementation
 
-This component exists in multiple languages:
-- **Python** (`pip install plato-core`) — [SuperInstance/plato-core](https://github.com/SuperInstance/plato-core)
-- **Rust** (`cargo add plato-core`) — [SuperInstance/plato-core-rs](https://github.com/SuperInstance/plato-core-rs)
-- **Rust Runtime Kernel** — [SuperInstance/plato-runtime-kernel](https://github.com/SuperInstance/plato-runtime-kernel) — Spatial model: tensor grid, batons, assertion traps
+| Aspect | Python | Rust |
+|--------|--------|------|
+| Package | `pip install plato-core` | `cargo add plato-core` |
+| Repo | [plato-core](https://github.com/SuperInstance/plato-core) | [plato-core-rs](https://github.com/SuperInstance/plato-core-rs) (this) |
+| Wire protocol | ✅ Compatible | ✅ Compatible |
+| Dependencies | stdlib + serde | serde + serde_json |
 
-All implement the same PLATO wire protocol specification. Choose based on your runtime.
+All implementations share the same PLATO wire protocol specification. An agent written in Python can connect to a room written in Rust, and vice versa.
+
+### Related PLATO Implementations
+- **Python** — [plato-core](https://github.com/SuperInstance/plato-core)
+- **Rust Runtime Kernel** — [plato-runtime-kernel](https://github.com/SuperInstance/plato-runtime-kernel) (spatial model: tensor grid, batons, assertion traps)
+- **Rust Security Audit Room** — [plato-room-security-audit](https://github.com/SuperInstance/plato-room-security-audit-rs)
+
+## Ecosystem
+
+### PLATO Rooms
+- [plato-room-security-audit-rs](https://github.com/SuperInstance/plato-room-security-audit-rs) — Automated security auditing as a PLATO room
+
+### FLUX Policy Layer
+- [conservation-enforcer-rs](https://github.com/SuperInstance/conservation-enforcer-rs) — Conservation-law enforcement
+- [flux-registry-rs](https://github.com/SuperInstance/flux-registry-rs) — Policy registry CLI
+- [flux-policy-tester-rs](https://github.com/SuperInstance/flux-policy-tester-rs) — Policy testing framework
+
+### Theory
+- [AI-Writings](https://github.com/SuperInstance/AI-Writings) — Paradigm essays and protocol specs
+
 ## License
 
 MIT
