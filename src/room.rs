@@ -34,6 +34,7 @@ pub struct Room {
 impl Room {
     /// Create a new room with the given name and tick frequency.
     pub fn new(name: impl Into<String>, tick_hz: f64) -> Self {
+        assert!(tick_hz > 0.0, "tick_hz must be positive, got {}", tick_hz);
         Self {
             name: name.into(),
             tick_hz,
@@ -152,7 +153,7 @@ impl Room {
 
         // Store in history (with rolling buffer)
         self.history.push(snapshot.clone());
-        if self.history.len() > MAX_HISTORY {
+        if self.history.len() >= MAX_HISTORY {
             self.history.remove(0);
         }
 
