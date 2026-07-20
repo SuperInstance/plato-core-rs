@@ -110,7 +110,15 @@ impl Room {
         threshold: f64,
         cooldown_sec: f64,
     ) {
-        self.alarms.push(Alarm::new(id, sensor, op, threshold, cooldown_sec));
+        let id_str = id.into();
+        // Reject duplicate alarm IDs
+        if self.alarms.iter().any(|a| a.id == id_str) {
+            return; // Silent no-op for duplicate — caller should remove first
+        }
+        if cooldown_sec < 0.0 {
+            panic!("cooldown_sec must be non-negative, got {}", cooldown_sec);
+        }
+        self.alarms.push(Alarm::new(id_str, sensor, op, threshold, cooldown_sec));
     }
 
     /// Remove an alarm by ID. Returns `true` if removed.
